@@ -111,6 +111,26 @@ function configure_monasca_log {
     configure_monasca_log_metrics
     configure_monasca_log_persister
     configure_monasca_log_agent
+
+    echo '
+#!/bin/bash -e
+export OS_USERNAME=admin
+export OS_PROJECT_NAME=admin
+export OS_PASSWORD=secretadmin
+export OS_AUTH_URL=http://192.168.10.6/identity/
+export OS_REGION_NAME=RegionOne
+
+openstack service list
+openstack project create monitoring
+openstack role create monasca-user
+openstack role create monasca-agent
+openstack user create --project monitoring --password password monitoring-agent
+openstack role add --project monitoring --user admin monasca-user
+openstack role add --project monitoring --user admin admin
+openstack role add --project monitoring --user monitoring-agent monasca-agent
+
+    ' > ~/agents-config.sh
+
 }
 
 function init_monasca_log {
@@ -614,49 +634,49 @@ function start_monasca_log_metrics {
 }
 
 function install_log_agent {
-    if is_service_enabled monasca-log-agent; then
+#    if is_service_enabled monasca-log-agent; then
         echo_summary "Installing monasca-log-agent [monasca-output-plugin]"
-
-        local monasca_log_agent_version=0.5.2
-        local ls_plugin_filename=logstash-output-monasca_log_api-${monasca_log_agent_version}.gem
-
-        $LOGSTASH_DIR/bin/plugin install "${PLUGIN_FILES}"/monasca-log-agent/${ls_plugin_filename}
-    fi
+#
+#        local monasca_log_agent_version=0.5.2
+#        local ls_plugin_filename=logstash-output-monasca_log_api-${monasca_log_agent_version}.gem
+#
+#        $LOGSTASH_DIR/bin/plugin install "${PLUGIN_FILES}"/monasca-log-agent/${ls_plugin_filename}
+#    fi
 }
 
 function configure_monasca_log_agent {
-    if is_service_enabled monasca-log-agent; then
+#    if is_service_enabled monasca-log-agent; then
         echo_summary "Configuring monasca-log-agent"
-
-        sudo install -m 755 -d -o $STACK_USER $LOG_AGENT_DIR
-
-        sudo cp -f "${PLUGIN_FILES}"/monasca-log-agent/agent.conf $LOG_AGENT_DIR/agent.conf
-        sudo chown $STACK_USER $LOG_AGENT_DIR/agent.conf
-        sudo chmod 0640 $LOG_AGENT_DIR/agent.conf
-
-        sudo sed -e "
-            s|%MONASCA_LOG_API_URI_V3%|$MONASCA_LOG_API_URI_V3|g;
-            s|%KEYSTONE_AUTH_URI_V3%|$KEYSTONE_AUTH_URI_V3|g;
-        " -i $LOG_AGENT_DIR/agent.conf
-
-        ln -sf $LOG_AGENT_DIR/agent.conf $GATE_CONFIGURATION_DIR/log-agent.conf
-
-    fi
+#
+#        sudo install -m 755 -d -o $STACK_USER $LOG_AGENT_DIR
+#
+#        sudo cp -f "${PLUGIN_FILES}"/monasca-log-agent/agent.conf $LOG_AGENT_DIR/agent.conf
+#        sudo chown $STACK_USER $LOG_AGENT_DIR/agent.conf
+#        sudo chmod 0640 $LOG_AGENT_DIR/agent.conf
+#
+#        sudo sed -e "
+#            s|%MONASCA_LOG_API_URI_V3%|$MONASCA_LOG_API_URI_V3|g;
+#            s|%KEYSTONE_AUTH_URI_V3%|$KEYSTONE_AUTH_URI_V3|g;
+#        " -i $LOG_AGENT_DIR/agent.conf
+#
+#        ln -sf $LOG_AGENT_DIR/agent.conf $GATE_CONFIGURATION_DIR/log-agent.conf
+#
+#    fi
 }
 
 function clean_monasca_log_agent {
-    if is_service_enabled monasca-log-agent; then
+#    if is_service_enabled monasca-log-agent; then
         echo_summary "Cleaning monasca-log-agent"
-        sudo rm -rf $LOG_AGENT_DIR || true
-    fi
+#        sudo rm -rf $LOG_AGENT_DIR || true
+#    fi
 }
 
 function start_monasca_log_agent {
-    if is_service_enabled monasca-log-agent; then
+#    if is_service_enabled monasca-log-agent; then
         echo_summary "Starting monasca-log-agent"
-        local logstash="$LOGSTASH_DIR/bin/logstash"
-        run_process "monasca-log-agent" "$logstash -f $LOG_AGENT_DIR/agent.conf" "root" "root"
-    fi
+#        local logstash="$LOGSTASH_DIR/bin/logstash"
+#        run_process "monasca-log-agent" "$logstash -f $LOG_AGENT_DIR/agent.conf" "root" "root"
+#    fi
 }
 
 function install_node_nvm {
@@ -732,54 +752,54 @@ function configure_kafka {
 }
 
 function create_log_management_accounts {
-    if is_service_enabled monasca-log-api; then
+#    if is_service_enabled monasca-log-api; then
         echo_summary "Enable Log Management in Keystone"
-
-        # note(trebskit) following points to Kibana which is bad,
-        # but we do not have search-api in monasca-log-api now
-        # this code will be removed in future
-        local log_search_url="http://$KIBANA_SERVICE_HOST:$KIBANA_SERVICE_PORT/"
-
-        get_or_create_service "logs" "logs" "Monasca Log service"
-        get_or_create_endpoint \
-            "logs" \
-            "$REGION_NAME" \
-            "$MONASCA_LOG_API_URI_V3" \
-            "$MONASCA_LOG_API_URI_V3" \
-            "$MONASCA_LOG_API_URI_V3"
-
-        get_or_create_service "logs_v2" "logs_v2" "Monasca Log V2.0 service"
-        get_or_create_endpoint \
-            "logs_v2" \
-            "$REGION_NAME" \
-            "$MONASCA_LOG_API_URI_V2" \
-            "$MONASCA_LOG_API_URI_V2" \
-            "$MONASCA_LOG_API_URI_V2"
-
-        get_or_create_service "logs-search" "logs-search" "Monasca Log search service"
-        get_or_create_endpoint \
-            "logs-search" \
-            "$REGION_NAME" \
-            "$log_search_url" \
-            "$log_search_url" \
-            "$log_search_url"
-
-    fi
+#
+#        # note(trebskit) following points to Kibana which is bad,
+#        # but we do not have search-api in monasca-log-api now
+#        # this code will be removed in future
+#        local log_search_url="http://$KIBANA_SERVICE_HOST:$KIBANA_SERVICE_PORT/"
+#
+#        get_or_create_service "logs" "logs" "Monasca Log service"
+#        get_or_create_endpoint \
+#            "logs" \
+#            "$REGION_NAME" \
+#            "$MONASCA_LOG_API_URI_V3" \
+#            "$MONASCA_LOG_API_URI_V3" \
+#            "$MONASCA_LOG_API_URI_V3"
+#
+#        get_or_create_service "logs_v2" "logs_v2" "Monasca Log V2.0 service"
+#        get_or_create_endpoint \
+#            "logs_v2" \
+#            "$REGION_NAME" \
+#            "$MONASCA_LOG_API_URI_V2" \
+#            "$MONASCA_LOG_API_URI_V2" \
+#            "$MONASCA_LOG_API_URI_V2"
+#
+#        get_or_create_service "logs-search" "logs-search" "Monasca Log search service"
+#        get_or_create_endpoint \
+#            "logs-search" \
+#            "$REGION_NAME" \
+#            "$log_search_url" \
+#            "$log_search_url" \
+#            "$log_search_url"
+#
+#    fi
 }
 
 function enable_log_management {
-    if is_service_enabled horizon && is_service_enabled kibana; then
+#    if is_service_enabled horizon && is_service_enabled kibana; then
         echo_summary "Configure Horizon with Kibana access"
-
-        local localSettings=${DEST}/horizon/monitoring/config/local_settings.py
-
-        sudo sed -e "
-            s|ENABLE_KIBANA_BUTTON = getattr(settings, 'ENABLE_KIBANA_BUTTON', False)|ENABLE_KIBANA_BUTTON = getattr(settings, 'ENABLE_KIBANA_BUTTON', True)|g;
-            s|KIBANA_HOST = getattr(settings, 'KIBANA_HOST', 'http://192.168.10.4:5601/')|KIBANA_HOST = getattr(settings, 'KIBANA_HOST', 'http://${KIBANA_SERVICE_HOST}:${KIBANA_SERVICE_PORT}/')|g;
-        " -i ${localSettings}
-
-        restart_apache_server
-    fi
+#
+#        local localSettings=${DEST}/horizon/monitoring/config/local_settings.py
+#
+#        sudo sed -e "
+#            s|ENABLE_KIBANA_BUTTON = getattr(settings, 'ENABLE_KIBANA_BUTTON', False)|ENABLE_KIBANA_BUTTON = getattr(settings, 'ENABLE_KIBANA_BUTTON', True)|g;
+#            s|KIBANA_HOST = getattr(settings, 'KIBANA_HOST', 'http://192.168.10.4:5601/')|KIBANA_HOST = getattr(settings, 'KIBANA_HOST', 'http://${KIBANA_SERVICE_HOST}:${KIBANA_SERVICE_PORT}/')|g;
+#        " -i ${localSettings}
+#
+#        restart_apache_server
+#    fi
 }
 
 function _run_process_sleep {
